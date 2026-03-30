@@ -14,11 +14,10 @@ env:
   NUGET_OUTPUT: ./nupkgs
   MAJOR_VERSION: 1
 
-# Required for updating repository variables
+# Required for updating repository variables via gh CLI
 permissions:
   actions: write
   contents: read
-  variables: write
 
 jobs:
   build:
