@@ -105,3 +105,13 @@ The `.csproj` dynamically builds the protected module ZIP at pack time:
 - `EPiServer.CMS` (>= 12.x)
 - `EPiServer.Forms` (>= 5.x)
 - Test project additionally uses `Serilog.AspNetCore` + `Serilog.Sinks.File`
+
+## Post-Change Checklist
+
+**IMPORTANT:** After every feature change, bug fix, or refactor, review and update:
+
+1. **README.md** (root) — Ensure installation, configuration, usage examples, project structure, CI/CD, and versioning sections are all accurate
+2. **CLAUDE.md** (this file) — Ensure architecture, file structure, design decisions, and known issues are current
+3. **ProtectedModule/lang/DynamicEmailRouting.xml** — Update localization if any new UI labels or actor names are added
+4. **Resources/Translations/DynamicEmailRouting.xml** — Keep in sync with the ProtectedModule lang file (this one is the embedded resource for ProjectReference dev)
+5. **GitHub Actions workflow** — Update `.github/workflows/build-nuget.yml` if build or versioning logic changes

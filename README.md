@@ -246,6 +246,8 @@ test/                                               Alloy demo site for developm
 
 The `test/` folder contains an Alloy MVC demo site used for development and testing. It references the NuGet project via `<ProjectReference>` and builds the protected module ZIP from source automatically.
 
+Login details admin / Pa55word-84
+
 ### How to Run
 
 #### Windows
@@ -286,37 +288,59 @@ dotnet run --project test
 
 ## CI/CD
 
-A GitHub Actions workflow (`.github/workflows/build-nuget.yml`) handles building and publishing:
+A GitHub Actions workflow (`.github/workflows/build-nuget.yml`) automatically builds and packages on every push.
 
-### Build (every push/PR)
+### What the Workflow Does
 
-- Restores, builds, and packs the NuGet project
-- Produces both `.nupkg` and `.snupkg` (symbols) artifacts
-- Uses deterministic builds with SourceLink for reproducibility and debugging
-- Version is auto-incremented: `1.{run_number}.0` on main, `1.{run_number}.0-preview` on PRs
+1. **Restores, builds, and packs** the NuGet project
+2. **Produces `.nupkg` and `.snupkg`** (symbols) artifacts, downloadable from the Actions tab
+3. **Auto-increments the minor version** after each successful build on `main`/`master`
+4. Uses deterministic builds with SourceLink for reproducibility
 
-### Publish (main branch + tags)
-
-- Pushes `.nupkg` and `.snupkg` to the Optimizely NuGet feed and NuGet.org
-- Uses `--skip-duplicate` to avoid failures on re-runs
-- Tagged releases (e.g. `git tag v2.0.0`) use the exact tag version
-
-### Required GitHub Secrets
-
-| Secret | Purpose |
-|---|---|
-| `OPTIMIZELY_NUGET_API_KEY` | API key for the Optimizely NuGet feed |
-| `NUGET_API_KEY` | (Optional) API key for NuGet.org |
+Publishing to NuGet feeds is done manually after downloading the artifact (see below).
 
 ### Versioning
 
-| Trigger | Version Example | Published? |
-|---|---|---|
-| Push to `main` | `1.15.0` | Yes |
-| Pull request | `1.16.0-preview` | No (build only) |
-| Git tag `v2.0.0` | `2.0.0` | Yes |
+Version is controlled by two values:
 
-To bump the major version, change `MAJOR_VERSION` in the workflow file.
+- **`MAJOR_VERSION`** &mdash; set in the workflow file (`.github/workflows/build-nuget.yml`), currently `1`
+- **`MINOR_VERSION`** &mdash; a GitHub repository variable that auto-increments on each build
+
+| Trigger | Version Format | Example |
+|---|---|---|
+| Push to `main`/`master` | `{MAJOR}.{MINOR}.0` | `1.3.0` |
+| Pull request | `{MAJOR}.{MINOR}.0-preview` | `1.4.0-preview` |
+| Git tag `v2.0.0` | Exact tag version | `2.0.0` |
+
+**To reset the minor version:** Go to **Settings > Secrets and variables > Actions > Variables** and set `MINOR_VERSION` to `0`.
+
+**To bump the major version:** Change `MAJOR_VERSION` in the workflow file and reset `MINOR_VERSION` to `0`.
+
+### Required GitHub Configuration
+
+| Type | Name | Purpose |
+|---|---|---|
+| **Variable** | `MINOR_VERSION` | Auto-incrementing minor version (set initial value to `0`) |
+| **Secret** | `PAT_TOKEN` | Personal Access Token with Variables read/write permission (needed to auto-increment `MINOR_VERSION`) |
+
+To create the PAT: **GitHub > Settings > Developer settings > Personal access tokens > Fine-grained tokens** with **Variables: Read and write** permission scoped to your repository.
+
+### Downloading and Publishing
+
+After a workflow run completes:
+
+1. Go to the **Actions** tab in your GitHub repo
+2. Click the completed workflow run
+3. Download the **nuget-package** artifact (contains `.nupkg` and `.snupkg`)
+4. Publish manually:
+
+```bash
+# To Optimizely feed
+dotnet nuget push ScottReed.Optimizely.Forms.DynamicEmailRouting.{version}.nupkg --api-key YOUR_KEY --source https://nuget.optimizely.com/feed/packages.svc/
+
+# To NuGet.org (optional)
+dotnet nuget push ScottReed.Optimizely.Forms.DynamicEmailRouting.{version}.nupkg --api-key YOUR_KEY --source https://api.nuget.org/v3/index.json
+```
 
 ---
 

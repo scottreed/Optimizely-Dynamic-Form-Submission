@@ -78,7 +78,8 @@
       "Bash(powershell -Command \"$strings = [System.IO.File]::ReadAllText\\(''EPiServer.Forms.UI.dll'', [System.Text.Encoding]::ASCII\\); if \\($strings -match ''FormsUIModule''\\) { Write-Host ''Found FormsUIModule'' }; if \\($strings -match ''ShellModule''\\) { Write-Host ''References ShellModule'' }; if \\($strings -match ''IShellModule''\\) { Write-Host ''References IShellModule'' }\")",
       "Bash(find 'C:/Users/scott/OneDrive/Claude/Optimizely Dynamic Form Submission/test/App_Data' -name *module* -o -name *cache* -o -name *shell*)",
       "Bash(rm -f DynamicEmailRoutingModule.cs DynamicEmailRoutingModuleRegistration.cs ScottReed.Optimizely.Forms.DynamicEmailRouting.zip)",
-      "Bash(rm -rf module_zip modules/_protected)"
+      "Bash(rm -rf module_zip modules/_protected)",
+      "mcp__plugin_claude-mem_mcp-search__save_memory"
     ]
   }
 }
