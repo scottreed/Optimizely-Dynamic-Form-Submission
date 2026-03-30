@@ -1,14 +1,10 @@
-name: Build & Publish NuGet Package
+name: Build NuGet Package
 
 on:
   push:
     paths:
       - 'ScottReed.Optimizely.Forms.DynamicEmailRouting/**'
       - '.github/workflows/build-nuget.yml'
-    branches:
-      - main
-    tags:
-      - 'v*'
   pull_request:
     paths:
       - 'ScottReed.Optimizely.Forms.DynamicEmailRouting/**'
@@ -26,7 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for SourceLink
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -64,44 +60,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nuget-package
-          path: ${{ env.NUGET_OUTPUT }}/*.nupkg
-
-      - name: Upload symbols artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nuget-symbols
-          path: ${{ env.NUGET_OUTPUT }}/*.snupkg
-          if-no-files-found: ignore
-
-  publish:
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
-
-    steps:
-      - name: Download NuGet artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: nuget-package
-          path: ${{ env.NUGET_OUTPUT }}
-
-      - name: Download symbols artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: nuget-symbols
-          path: ${{ env.NUGET_OUTPUT }}
-        continue-on-error: true
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Publish to Optimizely NuGet feed
-        run: dotnet nuget push "${{ env.NUGET_OUTPUT }}/*.nupkg" --api-key ${{ secrets.OPTIMIZELY_NUGET_API_KEY }} --source https://nuget.optimizely.com/feed/packages.svc/ --skip-duplicate
-
-      - name: Publish to NuGet.org
-        run: |
-          dotnet nuget push "${{ env.NUGET_OUTPUT }}/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-          dotnet nuget push "${{ env.NUGET_OUTPUT }}/*.snupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-        continue-on-error: true
+          path: |
+            ${{ env.NUGET_OUTPUT }}/*.nupkg
+            ${{ env.NUGET_OUTPUT }}/*.snupkg
