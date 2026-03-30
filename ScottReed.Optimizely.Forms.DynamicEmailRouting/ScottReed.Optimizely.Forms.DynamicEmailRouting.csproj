@@ -15,7 +15,7 @@
     <PackageTags>Optimizely EPiServer Forms Email Routing CMS12 Actor Submission Conditional</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/scottreed/optimizely-dynamic-email-routing</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/scottreed/Optimizely-Dynamic-Form-Submission/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/scottreed/optimizely-dynamic-email-routing</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>Initial release: Email routing, conditional logic (AND/OR), Insert Placeholder support.</PackageReleaseNotes>
@@ -67,31 +67,22 @@
       <_ModuleLangFiles Include="ProtectedModule\lang\**\*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_ModuleVersionedFiles)"
-          DestinationFiles="@(_ModuleVersionedFiles->'$(_ModuleZipStaging)\$(Version)\ClientResources\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(_ModuleVersionedFiles)" DestinationFiles="@(_ModuleVersionedFiles->'$(_ModuleZipStaging)\$(Version)\ClientResources\%(RecursiveDir)%(Filename)%(Extension)')" />
 
-    <Copy SourceFiles="@(_ModuleLangFiles)"
-          DestinationFiles="@(_ModuleLangFiles->'$(_ModuleZipStaging)\$(Version)\lang\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(_ModuleLangFiles)" DestinationFiles="@(_ModuleLangFiles->'$(_ModuleZipStaging)\$(Version)\lang\%(RecursiveDir)%(Filename)%(Extension)')" />
 
     <!-- Copy module.config to ZIP root (not versioned) -->
-    <Copy SourceFiles="ProtectedModule\module.config"
-          DestinationFolder="$(_ModuleZipStaging)" />
+    <Copy SourceFiles="ProtectedModule\module.config" DestinationFolder="$(_ModuleZipStaging)" />
 
     <!-- Create the ZIP -->
-    <ZipDirectory SourceDirectory="$(_ModuleZipStaging)"
-                  DestinationFile="$(_ModuleZipOutput)"
-                  Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(_ModuleZipStaging)" DestinationFile="$(_ModuleZipOutput)" Overwrite="true" />
   </Target>
 
   <!-- Include the generated ZIP in the NuGet package as a contentFile -->
   <Target Name="IncludeModuleZipInPackage" AfterTargets="CreateModuleZip" BeforeTargets="GenerateNuspec">
     <ItemGroup>
-      <_PackageFiles Include="$(_ModuleZipOutput)"
-                     PackagePath="contentFiles\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip"
-                     BuildAction="None"
-                     CopyToOutput="true" />
-      <_PackageFiles Include="$(_ModuleZipOutput)"
-                     PackagePath="content\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip" />
+      <_PackageFiles Include="$(_ModuleZipOutput)" PackagePath="contentFiles\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip" BuildAction="None" CopyToOutput="true" />
+      <_PackageFiles Include="$(_ModuleZipOutput)" PackagePath="content\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip" />
     </ItemGroup>
   </Target>
 
