@@ -14,6 +14,12 @@ env:
   NUGET_OUTPUT: ./nupkgs
   MAJOR_VERSION: 1
 
+# Required for updating repository variables
+permissions:
+  actions: write
+  contents: read
+  variables: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,11 +42,16 @@ jobs:
         id: version
         run: |
           if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # Tagged release — use exact tag version
             VERSION=${GITHUB_REF#refs/tags/v}
           elif [[ "${{ github.ref }}" == refs/heads/main || "${{ github.ref }}" == refs/heads/master ]]; then
-            VERSION=${{ env.MAJOR_VERSION }}.${{ github.run_number }}.0
+            # Main/master branch — use MAJOR.MINOR.0 from repo variables
+            MINOR=${{ vars.MINOR_VERSION || '0' }}
+            VERSION=${{ env.MAJOR_VERSION }}.${MINOR}.0
           else
-            VERSION=${{ env.MAJOR_VERSION }}.${{ github.run_number }}.0-preview
+            # PR or other branch — preview version
+            MINOR=${{ vars.MINOR_VERSION || '0' }}
+            VERSION=${{ env.MAJOR_VERSION }}.${MINOR}.0-preview
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Package version: $VERSION"
@@ -63,3 +74,14 @@ jobs:
           path: |
             ${{ env.NUGET_OUTPUT }}/*.nupkg
             ${{ env.NUGET_OUTPUT }}/*.snupkg
+
+      # Auto-increment MINOR_VERSION after successful build on main/master
+      - name: Increment minor version
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT=${{ vars.MINOR_VERSION || '0' }}
+          NEXT=$((CURRENT + 1))
+          gh variable set MINOR_VERSION --body "$NEXT"
+          echo "Incremented MINOR_VERSION: $CURRENT → $NEXT"
