@@ -1,0 +1,108 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>ScottReed.Optimizely.Forms.DynamicEmailRouting</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Scott Reed</Authors>
+    <Company>Scott Reed</Company>
+    <Copyright>Copyright (c) Scott Reed 2026</Copyright>
+    <Description>Dynamic Email Routing actor for Optimizely Forms (CMS 12). Routes form submission emails to different recipients based on field values with conditional logic (AND/OR) support. Includes a configurable editor UI with email routing rules, conditions (is/is not), and AND/OR matching.</Description>
+    <PackageTags>Optimizely EPiServer Forms Email Routing CMS12 Actor Submission Conditional</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/scottreed/optimizely-dynamic-email-routing</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/scottreed/optimizely-dynamic-email-routing</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>Initial release: Email routing, conditional logic (AND/OR), Insert Placeholder support.</PackageReleaseNotes>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- SourceLink -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- Protected module paths -->
+    <_ModuleName>ScottReed.Optimizely.Forms.DynamicEmailRouting</_ModuleName>
+    <_ModuleZipStaging>$(IntermediateOutputPath)module_zip</_ModuleZipStaging>
+    <_ModuleZipOutput>$(IntermediateOutputPath)$(_ModuleName).zip</_ModuleZipOutput>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EPiServer.Forms" Version="5.10.7" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- Embed the localization XML into the DLL (for ProjectReference / local dev) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Translations\**\*" />
+  </ItemGroup>
+
+  <!-- Exclude ProtectedModule source files from compilation -->
+  <ItemGroup>
+    <None Include="ProtectedModule\**\*" />
+    <Content Remove="ProtectedModule\**\*" />
+  </ItemGroup>
+
+  <!-- ============================================================ -->
+  <!-- Build the protected module ZIP dynamically at pack time      -->
+  <!-- Follows the same pattern as EPiServer.Forms.UI               -->
+  <!-- ============================================================ -->
+
+  <Target Name="CreateModuleZip" BeforeTargets="GenerateNuspec">
+    <!-- Clean and create staging directory with versioned structure -->
+    <RemoveDir Directories="$(_ModuleZipStaging)" />
+    <MakeDir Directories="$(_ModuleZipStaging)\$(Version)" />
+
+    <!-- Copy versioned content (JS editors + lang files) -->
+    <ItemGroup>
+      <_ModuleVersionedFiles Include="ProtectedModule\ClientResources\**\*" />
+      <_ModuleLangFiles Include="ProtectedModule\lang\**\*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_ModuleVersionedFiles)"
+          DestinationFiles="@(_ModuleVersionedFiles->'$(_ModuleZipStaging)\$(Version)\ClientResources\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <Copy SourceFiles="@(_ModuleLangFiles)"
+          DestinationFiles="@(_ModuleLangFiles->'$(_ModuleZipStaging)\$(Version)\lang\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Copy module.config to ZIP root (not versioned) -->
+    <Copy SourceFiles="ProtectedModule\module.config"
+          DestinationFolder="$(_ModuleZipStaging)" />
+
+    <!-- Create the ZIP -->
+    <ZipDirectory SourceDirectory="$(_ModuleZipStaging)"
+                  DestinationFile="$(_ModuleZipOutput)"
+                  Overwrite="true" />
+  </Target>
+
+  <!-- Include the generated ZIP in the NuGet package as a contentFile -->
+  <Target Name="IncludeModuleZipInPackage" AfterTargets="CreateModuleZip" BeforeTargets="GenerateNuspec">
+    <ItemGroup>
+      <_PackageFiles Include="$(_ModuleZipOutput)"
+                     PackagePath="contentFiles\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip"
+                     BuildAction="None"
+                     CopyToOutput="true" />
+      <_PackageFiles Include="$(_ModuleZipOutput)"
+                     PackagePath="content\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Include MSBuild targets that copy the ZIP to modules/_protected/ on build -->
+  <ItemGroup>
+    <None Include="build\$(_ModuleName).targets" Pack="true" PackagePath="build\$(_ModuleName).targets" />
+  </ItemGroup>
+
+  <!-- Include README in the package -->
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

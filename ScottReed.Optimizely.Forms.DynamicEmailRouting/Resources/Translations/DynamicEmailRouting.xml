@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<languages>
+  <language name="English" id="en">
+    <episerver>
+      <forms>
+        <submissionactors>
+          <scottreed.optimizely.forms.dynamicemailrouting.actors.dynamicemailroutingactor>
+            <displayname>Dynamic email routing</displayname>
+          </scottreed.optimizely.forms.dynamicemailrouting.actors.dynamicemailroutingactor>
+        </submissionactors>
+        <editview>
+          <dynamicemailroutingactormodel>
+            <emailrouting>Email Routing</emailrouting>
+            <emailroutingdescription>Route the To address based on a form field value. The base To field is used as a fallback if no route matches.</emailroutingdescription>
+            <conditionmatch>Conditional Match</conditionmatch>
+            <conditionmatchdescription>Choose whether all conditions must match (AND) or any condition must match (OR).</conditionmatchdescription>
+            <conditions>Conditions</conditions>
+            <conditionsdescription>Define conditions that must be met for the email to be sent. Leave empty to always send.</conditionsdescription>
+          </dynamicemailroutingactormodel>
+        </editview>
+      </forms>
+    </episerver>
+  </language>
+</languages>

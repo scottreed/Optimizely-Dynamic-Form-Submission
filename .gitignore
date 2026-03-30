@@ -1,0 +1,32 @@
+App_Data/
+node_modules/
+artifacts/
+
+# Visual Studio files
+*.user
+*.suo
+*.lock.json
+.vscode/
+.vs/
+.nuget/
+packages/
+bin/
+obj/
+
+# NuGet build artifacts
+*.nupkg
+*.snupkg
+*.zip
+
+# Optimizely protected modules (restored from NuGet on build)
+**/modules/_protected/
+*license.config
+
+# Build staging artifacts (generated at pack time)
+module_zip/
+
+# OS files
+.DS_Store
+thumbs.db
+ehthumbs.db
+desktop.ini

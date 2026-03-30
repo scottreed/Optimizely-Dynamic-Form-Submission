@@ -1,0 +1,107 @@
+name: Build & Publish NuGet Package
+
+on:
+  push:
+    paths:
+      - 'ScottReed.Optimizely.Forms.DynamicEmailRouting/**'
+      - '.github/workflows/build-nuget.yml'
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    paths:
+      - 'ScottReed.Optimizely.Forms.DynamicEmailRouting/**'
+
+env:
+  PROJECT_PATH: ScottReed.Optimizely.Forms.DynamicEmailRouting/ScottReed.Optimizely.Forms.DynamicEmailRouting.csproj
+  NUGET_OUTPUT: ./nupkgs
+  MAJOR_VERSION: 1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for SourceLink
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Add Optimizely NuGet feed
+        run: dotnet nuget add source https://nuget.optimizely.com/feed/packages.svc/ --name Optimizely
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            VERSION=${{ env.MAJOR_VERSION }}.${{ github.run_number }}.0
+          else
+            VERSION=${{ env.MAJOR_VERSION }}.${{ github.run_number }}.0-preview
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Package version: $VERSION"
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore /p:Version=${{ steps.version.outputs.VERSION }} /p:CI=true
+        env:
+          CI: true
+
+      - name: Pack
+        run: dotnet pack ${{ env.PROJECT_PATH }} -c Release -o ${{ env.NUGET_OUTPUT }} /p:Version=${{ steps.version.outputs.VERSION }}
+
+      - name: Upload NuGet package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: ${{ env.NUGET_OUTPUT }}/*.nupkg
+
+      - name: Upload symbols artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-symbols
+          path: ${{ env.NUGET_OUTPUT }}/*.snupkg
+          if-no-files-found: ignore
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download NuGet artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+          path: ${{ env.NUGET_OUTPUT }}
+
+      - name: Download symbols artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: nuget-symbols
+          path: ${{ env.NUGET_OUTPUT }}
+        continue-on-error: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish to Optimizely NuGet feed
+        run: dotnet nuget push "${{ env.NUGET_OUTPUT }}/*.nupkg" --api-key ${{ secrets.OPTIMIZELY_NUGET_API_KEY }} --source https://nuget.optimizely.com/feed/packages.svc/ --skip-duplicate
+
+      - name: Publish to NuGet.org
+        run: |
+          dotnet nuget push "${{ env.NUGET_OUTPUT }}/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push "${{ env.NUGET_OUTPUT }}/*.snupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        continue-on-error: true

@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="EPiServer" />
+    <Using Include="EPiServer.Core" />
+    <Using Include="EPiServer.DataAbstraction" />
+    <Using Include="EPiServer.DataAnnotations" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="EPiServer.CMS" Version="12.29.0" />
+    <PackageReference Include="EPiServer.Forms" Version="5.10.7" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Wangkanai.Detection" Version="8.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ScottReed.Optimizely.Forms.DynamicEmailRouting\ScottReed.Optimizely.Forms.DynamicEmailRouting.csproj" />
+  </ItemGroup>
+
+  <!-- Copy the protected module ZIP from the library project on build (dev only) -->
+  <PropertyGroup>
+    <_DER_LibraryProject>..\ScottReed.Optimizely.Forms.DynamicEmailRouting</_DER_LibraryProject>
+    <_DER_ModuleName>ScottReed.Optimizely.Forms.DynamicEmailRouting</_DER_ModuleName>
+    <_DER_ModuleTarget>$(MSBuildProjectDirectory)\modules\_protected\$(_DER_ModuleName)</_DER_ModuleTarget>
+  </PropertyGroup>
+
+  <Target Name="BuildDynamicEmailRoutingModule" BeforeTargets="BeforeBuild">
+    <!-- Create staging directory -->
+    <MakeDir Directories="$(IntermediateOutputPath)der_module\$(Version)" Condition="'$(Version)' != ''" />
+    <MakeDir Directories="$(IntermediateOutputPath)der_module\1.0.0" Condition="'$(Version)' == ''" />
+
+    <!-- Copy versioned content -->
+    <ItemGroup>
+      <_DER_ClientFiles Include="$(_DER_LibraryProject)\ProtectedModule\ClientResources\**\*" />
+      <_DER_LangFiles Include="$(_DER_LibraryProject)\ProtectedModule\lang\**\*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_DER_ClientFiles)"
+          DestinationFiles="@(_DER_ClientFiles->'$(IntermediateOutputPath)der_module\1.0.0\ClientResources\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <Copy SourceFiles="@(_DER_LangFiles)"
+          DestinationFiles="@(_DER_LangFiles->'$(IntermediateOutputPath)der_module\1.0.0\lang\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Copy module.config to root -->
+    <Copy SourceFiles="$(_DER_LibraryProject)\ProtectedModule\module.config"
+          DestinationFolder="$(IntermediateOutputPath)der_module" />
+
+    <!-- Create ZIP -->
+    <ZipDirectory SourceDirectory="$(IntermediateOutputPath)der_module"
+                  DestinationFile="$(IntermediateOutputPath)$(_DER_ModuleName).zip"
+                  Overwrite="true" />
+
+    <!-- Copy ZIP to modules/_protected/ -->
+    <MakeDir Directories="$(_DER_ModuleTarget)" />
+    <Copy SourceFiles="$(IntermediateOutputPath)$(_DER_ModuleName).zip"
+          DestinationFolder="$(_DER_ModuleTarget)" />
+  </Target>
+</Project>
