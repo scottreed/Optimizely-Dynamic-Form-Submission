@@ -78,7 +78,7 @@ jobs:
       - name: Increment minor version
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           CURRENT=${{ vars.MINOR_VERSION || '0' }}
           NEXT=$((CURRENT + 1))
