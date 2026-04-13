@@ -20,12 +20,16 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Models
         [UIHint("EmailRoutingEditor")]
         public virtual string EmailRouting { get; set; }
 
-        [Display(Name = "Conditional Match", Order = 1,
+        [Display(Name = "Enable Conditional Logic", Order = 1,
+            Description = "When enabled, the conditions below gate whether this email is sent. When disabled, conditions are ignored and the email is always sent (subject to email routing).")]
+        public virtual bool ConditionsEnabled { get; set; } = true;
+
+        [Display(Name = "Conditional Match", Order = 2,
             Description = "Whether ALL or ANY conditions must match.")]
         [UIHint("ConditionMatchEditor")]
         public virtual string ConditionMatch { get; set; } = "all";
 
-        [Display(Name = "Conditions", Order = 2,
+        [Display(Name = "Conditions", Order = 3,
             Description = "Conditions that control whether this email is sent. Leave empty to always send.")]
         [UIHint("ConditionsEditor")]
         public virtual string Conditions { get; set; }

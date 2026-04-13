@@ -2,8 +2,9 @@
 
 A custom Optimizely Forms post-submission actor for CMS 12 that provides:
 
-- **Email Routing** &mdash; dynamically routes the "To" email address based on a submitted form field value. The base "To" field acts as a fallback if no route matches.
-- **Conditional Logic** &mdash; gates whether the email is sent at all, with AND/OR matching across multiple conditions using "is" and "is not" operators.
+- **Email Routing** &mdash; dynamically routes the "To" email address based on a submitted form field value, using the same rich operator set as conditions (is, is not, contains, starts with, ends with, greater than, less than). The base "To" field acts as a fallback if no route matches.
+- **Conditional Logic** &mdash; gates whether the email is sent at all, with AND/OR matching across multiple conditions. Operators: **is**, **is not**, **contains**, **starts with**, **ends with**, **greater than**, **less than**.
+- **Smart value inputs** &mdash; when a routing or condition row targets a selection-type form element (dropdown, radio, checkbox), the value input automatically switches from a free-text box to a dropdown of the element's predefined options.
 - **Full Email Template Support** &mdash; inherits the Insert Placeholder dropdown, rich text body editor, From/Reply-To/Subject fields from the built-in email actor.
 
 ---
@@ -87,18 +88,20 @@ The Email Routing section lets you route the "To" address based on a form field 
 | Column | Description |
 |---|---|
 | **Field** | Dropdown of form fields (e.g. "Department") |
-| **Value** | The value to match (e.g. "Sales") |
+| **Operator** | Comparison operator &mdash; **is**, **is not**, **contains**, **starts with**, **ends with**, **greater than**, or **less than** |
+| **Value** | The value to compare against (free-text, or a dropdown of predefined options if the field is a selection element) |
 | **Email** | The recipient email address when matched |
 
 The first matching route wins. If no route matches, the base **To** field is used as a fallback.
 
 **Example:**
 
-| Field | Value | Email |
-|---|---|---|
-| Department | Sales | sales@company.com |
-| Department | Support | support@company.com |
-| Department | HR | hr@company.com |
+| Field | Operator | Value | Email |
+|---|---|---|---|
+| Department | is | Sales | sales@company.com |
+| Department | is | Support | support@company.com |
+| Department | contains | HR | hr@company.com |
+| Subject | starts with | URGENT | priority@company.com |
 
 If a visitor selects "Sales", the email is sent to `sales@company.com`. If they select "Other" (no match), the fallback "To" address is used.
 
@@ -106,7 +109,11 @@ If a visitor selects "Sales", the email is sent to `sales@company.com`. If they 
 
 ## Configuring Conditions
 
-Conditions gate whether the email is sent at all. The **Conditional Match** dropdown controls the logic:
+Conditions gate whether the email is sent at all.
+
+The **Enable Conditional Logic** checkbox (directly above the conditions) lets you toggle the whole conditional block on and off without losing the configured rows. When unchecked, the **Conditional Match** dropdown and **Conditions** list are ignored at runtime and the email is always sent (still subject to email routing). This is useful for temporarily disabling a rule during testing without having to delete the condition rows.
+
+The **Conditional Match** dropdown controls the logic when conditions are enabled:
 
 - **All conditions must match (AND)** &mdash; every condition must pass for the email to be sent
 - **Any condition must match (OR)** &mdash; at least one condition must pass
@@ -116,8 +123,24 @@ Each condition row contains:
 | Column | Description |
 |---|---|
 | **Field** | Dropdown of form fields |
-| **Operator** | "is" or "is not" |
-| **Value** | The value to compare against |
+| **Operator** | Comparison operator (see below) |
+| **Value** | The value to compare against (free-text, or a dropdown of predefined options if the field is a selection element) |
+
+### Supported operators
+
+Both **Conditions** and **Email Routing** rows support the same operator set:
+
+| Operator | Stored value | Matches when submitted value&hellip; |
+|---|---|---|
+| is | `is` | equals the comparison value (case-insensitive) |
+| is not | `is_not` | does **not** equal the comparison value |
+| contains | `contains` | contains the comparison value as a substring |
+| starts with | `starts_with` | begins with the comparison value |
+| ends with | `ends_with` | ends with the comparison value |
+| greater than | `greater_than` | sorts after the comparison value (ordinal string compare) |
+| less than | `less_than` | sorts before the comparison value (ordinal string compare) |
+
+All comparisons are case-insensitive. `greater than` / `less than` use an ordinal string comparison &mdash; fine for lexical ordering but **not** numeric-aware (`"10"` sorts before `"2"`).
 
 **Example (AND mode):**
 
@@ -125,8 +148,9 @@ Each condition row contains:
 |---|---|---|
 | Enquiry Type | is | Contact |
 | Region | is not | Internal |
+| Message | contains | urgent |
 
-This only sends the email when the enquiry type is "Contact" AND the region is not "Internal".
+This only sends the email when all three conditions pass.
 
 **Example (OR mode):**
 
@@ -134,8 +158,9 @@ This only sends the email when the enquiry type is "Contact" AND the region is n
 |---|---|---|
 | Priority | is | Urgent |
 | Priority | is | Critical |
+| Subject | starts with | ALERT |
 
-This sends the email when the priority is either "Urgent" OR "Critical".
+This sends the email when any one of the three matches.
 
 If no conditions are configured, the email is always sent (subject to email routing).
 
@@ -179,6 +204,7 @@ The actor uses Optimizely's built-in SMTP client. Configure in `appsettings.json
 - **First matching route wins** for email routing; fallback to base "To" if none match
 - **Empty conditions** = always send
 - **Failed JSON parsing** = email is sent (fail-open design)
+- **Operators** use ordinal string comparison (`greater_than` / `less_than` are lexical, not numeric). All other operators are substring or equality checks against the submitted value.
 
 ---
 
@@ -201,21 +227,24 @@ Configure logging output in your consuming application (e.g. Serilog to `App_Dat
 ```
 ScottReed.Optimizely.Forms.DynamicEmailRouting/     NuGet package / class library
   Actors/
-    DynamicEmailRoutingActor.cs                     Actor with routing + conditional logic
+    DynamicEmailRoutingActor.cs                     Actor with routing + conditional logic (shared EvaluateComparison)
+  Controllers/
+    FormElementItemsController.cs                   API: returns predefined options for selection elements
   Models/
-    DynamicEmailRoutingActorModel.cs                Model with EmailRouting, ConditionMatch, Conditions
+    DynamicEmailRoutingActorModel.cs                Model with EmailRouting (Field/Operator/Value/Email),
+                                                    ConditionMatch, Conditions
   Properties/
     PropertyDynamicEmailRoutingActor.cs             Property definition + editor descriptors
-  DynamicEmailRoutingInitialization.cs              Auto-registers protected module with CMS
+  DynamicEmailRoutingInitialization.cs              Auto-registers protected module + MVC controllers
   Resources/Translations/
     DynamicEmailRouting.xml                         Embedded localization (for ProjectReference dev)
   ProtectedModule/                                  Source files for the module ZIP
     module.config                                   Module manifest (Dojo packages, assemblies)
     ClientResources/dynamic-email-routing/editors/
       DynamicEmailRoutingEditor.js                  Extends EmailTemplateActorEditor
-      EmailRoutingEditor.js                         Add/remove routing rows (field, value, email)
+      EmailRoutingEditor.js                         Add/remove routing rows (field, operator, value, email)
       ConditionMatchEditor.js                       Dropdown: All (AND) or Any (OR)
-      ConditionsEditor.js                           Add/remove condition rows (field, is/is not, value)
+      ConditionsEditor.js                           Add/remove condition rows (field, operator, value)
     lang/
       DynamicEmailRouting.xml                       Localization (actor display name + labels)
   build/
@@ -223,6 +252,10 @@ ScottReed.Optimizely.Forms.DynamicEmailRouting/     NuGet package / class librar
 
 test/                                               Alloy demo site for development and testing
 ```
+
+### Selection-items API
+
+`GET /api/dynamicemailrouting/selection-items/{formContentLink}` &mdash; returns the predefined `{ caption, value }` options for every selection-type element on a form (dropdown, radio, checkbox). Called once per form by the editors and cached client-side; used to swap the value free-text box to a dropdown. Requires an authenticated CMS editor (`[Authorize]`).
 
 ### What's in the NuGet Package
 
@@ -237,8 +270,9 @@ test/                                               Alloy demo site for developm
 
 ## Extending the Actor
 
-1. **Add operators** &mdash; extend the `ConditionRule` model and `EvaluateConditions()` switch statement (e.g. "contains", "starts with")
-2. **Add routing logic** &mdash; extend `ResolveEmailRouting()` for more complex routing (e.g. regex matching, multiple field combinations)
+1. **Add operators** &mdash; `EvaluateComparison()` in `DynamicEmailRoutingActor` is the single switch used by both conditions and routing. Add a new `case` there, then add a matching `<option>` to both `ConditionsEditor.js` and `EmailRoutingEditor.js`.
+2. **Numeric-aware comparisons** &mdash; `greater_than` / `less_than` currently use ordinal string comparison. Parse to `decimal` / `DateTime` in `EvaluateComparison()` if you need numeric or date ordering.
+3. **Add routing logic** &mdash; extend `ResolveEmailRouting()` for more complex routing (e.g. regex matching, multiple field combinations).
 
 ---
 
