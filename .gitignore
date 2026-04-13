@@ -25,6 +25,10 @@ obj/
 # Build staging artifacts (generated at pack time)
 module_zip/
 
+# Local NuGet consumer test project (not part of the shipped package)
+Nuget Test Project/
+NuGet Test Project/
+
 # OS files
 .DS_Store
 thumbs.db

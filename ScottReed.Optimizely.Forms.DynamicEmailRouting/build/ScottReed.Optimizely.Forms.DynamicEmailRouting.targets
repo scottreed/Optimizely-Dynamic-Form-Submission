@@ -10,8 +10,9 @@
     <DynamicEmailRoutingZip Include="$(MSBuildThisFileDirectory)..\contentFiles\any\any\modules\_protected\**\*.zip" />
   </ItemGroup>
 
-  <Target Name="DynamicEmailRoutingCopyModuleFiles" BeforeTargets="BeforeBuild">
+  <Target Name="DynamicEmailRoutingCopyModuleFiles" BeforeTargets="Build">
     <Copy
+      SkipUnchangedFiles="true"
       SourceFiles="@(DynamicEmailRoutingZip)"
       DestinationFolder="$(MSBuildProjectDirectory)\modules\_protected\%(RecursiveDir)"
     />

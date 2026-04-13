@@ -29,10 +29,13 @@
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
 
-    <!-- Protected module paths -->
+    <!-- Protected module paths.
+         IntermediateOutputPath may be unset when this PropertyGroup is evaluated (it's populated
+         later by the SDK targets), so anchor the staging dir under the project's obj/ folder
+         explicitly to avoid the ZIP being written at the project root. -->
     <_ModuleName>ScottReed.Optimizely.Forms.DynamicEmailRouting</_ModuleName>
-    <_ModuleZipStaging>$(IntermediateOutputPath)module_zip</_ModuleZipStaging>
-    <_ModuleZipOutput>$(IntermediateOutputPath)$(_ModuleName).zip</_ModuleZipOutput>
+    <_ModuleZipStaging>$(MSBuildProjectDirectory)\obj\module_zip\$(Configuration)</_ModuleZipStaging>
+    <_ModuleZipOutput>$(MSBuildProjectDirectory)\obj\$(Configuration)\$(_ModuleName).zip</_ModuleZipOutput>
   </PropertyGroup>
 
   <ItemGroup>
@@ -86,13 +89,21 @@
     <ZipDirectory SourceDirectory="$(_ModuleZipStaging)" DestinationFile="$(_ModuleZipOutput)" Overwrite="true" />
   </Target>
 
-  <!-- Include the generated ZIP in the NuGet package as a contentFile -->
-  <Target Name="IncludeModuleZipInPackage" AfterTargets="CreateModuleZip" BeforeTargets="GenerateNuspec">
-    <ItemGroup>
-      <_PackageFiles Include="$(_ModuleZipOutput)" PackagePath="contentFiles\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip" BuildAction="None" CopyToOutput="true" />
-      <_PackageFiles Include="$(_ModuleZipOutput)" PackagePath="content\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip" />
-    </ItemGroup>
-  </Target>
+  <!-- Include the generated ZIP in the NuGet package as a contentFile.
+       Declared at item-group level (not inside a target) so Pack's nuspec generator sees it.
+       PackageCopyToOutput="true" is what makes NuGet emit copyToOutput="true" in the nuspec,
+       so the consumer's bin/{cfg}/{tfm}/modules/_protected/ gets a copy too (same pattern
+       EPiServer.CMS.UI uses). The file itself is produced by CreateModuleZip before pack runs. -->
+  <ItemGroup>
+    <Content Include="$(_ModuleZipOutput)" Condition="'$(IsPackable)' != 'false'">
+      <Pack>true</Pack>
+      <PackagePath>contentFiles\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip;content\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip</PackagePath>
+      <BuildAction>None</BuildAction>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </Content>
+  </ItemGroup>
 
   <!-- Include MSBuild targets that copy the ZIP to modules/_protected/ on build -->
   <ItemGroup>
