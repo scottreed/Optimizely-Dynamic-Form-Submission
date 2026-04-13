@@ -16,7 +16,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/scottreed/Optimizely-Dynamic-Form-Submission/</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/scottreed/optimizely-dynamic-email-routing</RepositoryUrl>
+    <RepositoryUrl>https://github.com/scottreed/Optimizely-Dynamic-Form-Submission/</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>Initial release: Email routing, conditional logic (AND/OR), Insert Placeholder support.</PackageReleaseNotes>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -81,9 +81,7 @@
          versioned client-resource folder inside the ZIP ($(Version)/ClientResources/...) is
          actually what Optimizely serves. Without this, module.config's hard-coded version
          would 404 every .js/.css after a version bump. -->
-    <XmlPoke XmlInputPath="$(_ModuleZipStaging)\module.config"
-             Query="/module/@clientResourceRelativePath"
-             Value="$(Version)" />
+    <XmlPoke XmlInputPath="$(_ModuleZipStaging)\module.config" Query="/module/@clientResourceRelativePath" Value="$(Version)" />
 
     <!-- Create the ZIP -->
     <ZipDirectory SourceDirectory="$(_ModuleZipStaging)" DestinationFile="$(_ModuleZipOutput)" Overwrite="true" />
