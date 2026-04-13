@@ -3,6 +3,7 @@ using EPiServer.Framework.Initialization;
 using EPiServer.ServiceLocation;
 using EPiServer.Shell.Modules;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace ScottReed.Optimizely.Forms.DynamicEmailRouting
 {
@@ -28,6 +29,10 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting
                     options.Items.Add(new ModuleDetails { Name = ModuleName });
                 }
             });
+
+            // Register controllers from this assembly so ASP.NET Core discovers them
+            context.Services.AddControllers()
+                .AddApplicationPart(typeof(DynamicEmailRoutingInitialization).Assembly);
         }
 
         public void Initialize(InitializationEngine context) { }

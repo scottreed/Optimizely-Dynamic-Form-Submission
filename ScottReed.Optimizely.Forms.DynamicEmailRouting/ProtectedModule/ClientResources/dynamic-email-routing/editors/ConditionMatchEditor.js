@@ -17,14 +17,14 @@ define([
 
         templateString:
             '<div class="condition-match-editor">' +
-                '<select data-dojo-attach-point="matchSelect" class="condition-match-select">' +
-                    '<option value="all">All conditions must match (AND)</option>' +
-                    '<option value="any">Any condition must match (OR)</option>' +
-                '</select>' +
-                '<style>' +
-                    '.condition-match-editor { margin: 4px 0; }' +
-                    '.condition-match-select { padding: 6px 8px; border: 1px solid #c8c8c8; border-radius: 3px; font-size: 13px; width: 100%; }' +
-                '</style>' +
+            '<select data-dojo-attach-point="matchSelect" class="condition-match-select">' +
+            '<option value="all">All conditions must match (AND)</option>' +
+            '<option value="any">Any condition must match (OR)</option>' +
+            '</select>' +
+            '<style>' +
+            '.condition-match-editor { margin: 4px 0; }' +
+            '.condition-match-select { padding: 6px 8px; border: 1px solid #c8c8c8; border-radius: 3px; font-size: 13px; width: 100%; }' +
+            '</style>' +
             '</div>',
 
         value: "all",

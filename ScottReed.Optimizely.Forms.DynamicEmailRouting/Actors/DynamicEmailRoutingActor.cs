@@ -53,7 +53,7 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
 
                 var friendlyData = BuildFriendlySubmissionData();
 
-                _log.LogInformation("DynamicEmailRoutingActor: Friendly data: {Keys}",
+                _log.LogDebug("DynamicEmailRoutingActor: Friendly data: {Keys}",
                     string.Join(", ", friendlyData.Select(kv => $"[{kv.Key}]=[{kv.Value}]")));
 
                 // Process each rule: evaluate conditions, apply email routing
@@ -67,7 +67,7 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
                         var matchMode = rule.ConditionMatch?.Trim().ToLowerInvariant() ?? "all";
                         if (!EvaluateConditions(rule.Conditions, friendlyData, matchMode))
                         {
-                            _log.LogInformation("DynamicEmailRoutingActor: Rule skipped — conditions not met (mode={Mode}).", matchMode);
+                            _log.LogDebug("DynamicEmailRoutingActor: Rule skipped — conditions not met (mode={Mode}).", matchMode);
                             continue;
                         }
                     }
@@ -76,12 +76,12 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
                     var routedEmail = ResolveEmailRouting(rule.EmailRouting, friendlyData);
                     if (!string.IsNullOrWhiteSpace(routedEmail))
                     {
-                        _log.LogInformation("DynamicEmailRoutingActor: Email routed to {Email}", routedEmail);
+                        _log.LogDebug("DynamicEmailRoutingActor: Email routed to {Email}", routedEmail);
                         rule.ToEmails = routedEmail;
                     }
                     else
                     {
-                        _log.LogInformation("DynamicEmailRoutingActor: No routing match — using fallback ToEmails: {To}", rule.ToEmails);
+                        _log.LogDebug("DynamicEmailRoutingActor: No routing match — using fallback ToEmails: {To}", rule.ToEmails);
                     }
 
                     rulesToSend.Add(rule);
@@ -137,12 +137,15 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
                 var fieldName = route.Field.Trim().Trim(':');
                 var submittedValue = ResolveFieldValue(fieldName, friendlyData);
                 var routeValue = route.Value?.Trim() ?? string.Empty;
+                var op = route.Operator?.Trim().ToLowerInvariant() ?? "is";
 
-                _log.LogInformation(
-                    "DynamicEmailRoutingActor: Email route check — {Field}: submitted='{Submitted}' vs route='{RouteValue}' → email={Email}",
-                    fieldName, submittedValue, routeValue, route.Email);
+                bool routeMatched = EvaluateComparison(submittedValue, routeValue, op);
 
-                if (string.Equals(submittedValue, routeValue, StringComparison.OrdinalIgnoreCase))
+                _log.LogDebug(
+                    "DynamicEmailRoutingActor: Email route check — '{Field}' {Op} '{RouteValue}' (submitted='{Submitted}') → {Result}, email={Email}",
+                    fieldName, op, routeValue, submittedValue, routeMatched ? "MATCH" : "NO MATCH", route.Email);
+
+                if (routeMatched)
                 {
                     return route.Email.Trim();
                 }
@@ -170,10 +173,39 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
                     return kvp.Value?.Trim() ?? string.Empty;
             }
 
-            _log.LogWarning("DynamicEmailRoutingActor: Field '{Field}' not found in submission data. Available keys: {Keys}",
+            _log.LogDebug("DynamicEmailRoutingActor: Field '{Field}' not found in submission data. Available keys: {Keys}",
                 fieldName, string.Join(", ", friendlyData.Keys));
 
             return string.Empty;
+        }
+
+        /// <summary>
+        /// Evaluates a comparison operation between two values using the specified operator.
+        /// </summary>
+        /// <param name="submittedValue">The actual value from the form submission</param>
+        /// <param name="comparisonValue">The expected value to compare against</param>
+        /// <param name="operatorName">The comparison operator (is, is_not, contains, starts_with, ends_with, greater_than, less_than)</param>
+        /// <returns>True if the comparison passes, false otherwise</returns>
+        private bool EvaluateComparison(string submittedValue, string comparisonValue, string operatorName)
+        {
+            switch (operatorName)
+            {
+                case "is_not":
+                    return !string.Equals(submittedValue, comparisonValue, StringComparison.OrdinalIgnoreCase);
+                case "greater_than":
+                    return string.Compare(submittedValue, comparisonValue, StringComparison.OrdinalIgnoreCase) > 0;
+                case "less_than":
+                    return string.Compare(submittedValue, comparisonValue, StringComparison.OrdinalIgnoreCase) < 0;
+                case "contains":
+                    return submittedValue.IndexOf(comparisonValue, StringComparison.OrdinalIgnoreCase) >= 0;
+                case "starts_with":
+                    return submittedValue.StartsWith(comparisonValue, StringComparison.OrdinalIgnoreCase);
+                case "ends_with":
+                    return submittedValue.EndsWith(comparisonValue, StringComparison.OrdinalIgnoreCase);
+                case "is":
+                default:
+                    return string.Equals(submittedValue, comparisonValue, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         private Dictionary<string, string> BuildFriendlySubmissionData()
@@ -236,22 +268,11 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
                 var fieldName = condition.Field.Trim().Trim(':');
                 var submittedValue = ResolveFieldValue(fieldName, friendlyData);
                 var conditionValue = condition.Value?.Trim() ?? string.Empty;
-                var isMatch = string.Equals(submittedValue, conditionValue, StringComparison.OrdinalIgnoreCase);
                 var op = condition.Operator?.Trim().ToLowerInvariant() ?? "is";
 
-                bool conditionPassed;
-                switch (op)
-                {
-                    case "is not":
-                        conditionPassed = !isMatch;
-                        break;
-                    case "is":
-                    default:
-                        conditionPassed = isMatch;
-                        break;
-                }
+                bool conditionPassed = EvaluateComparison(submittedValue, conditionValue, op);
 
-                _log.LogInformation(
+                _log.LogDebug(
                     "DynamicEmailRoutingActor: Condition — '{Field}' {Op} '{Expected}' (submitted='{Submitted}') → {Result}",
                     fieldName, op, conditionValue, submittedValue, conditionPassed ? "PASS" : "FAIL");
 
