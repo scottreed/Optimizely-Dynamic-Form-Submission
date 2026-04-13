@@ -79,7 +79,8 @@
       "Bash(find 'C:/Users/scott/OneDrive/Claude/Optimizely Dynamic Form Submission/test/App_Data' -name *module* -o -name *cache* -o -name *shell*)",
       "Bash(rm -f DynamicEmailRoutingModule.cs DynamicEmailRoutingModuleRegistration.cs ScottReed.Optimizely.Forms.DynamicEmailRouting.zip)",
       "Bash(rm -rf module_zip modules/_protected)",
-      "mcp__plugin_claude-mem_mcp-search__save_memory"
+      "mcp__plugin_claude-mem_mcp-search__save_memory",
+      "Bash(grep -rn \"1\\\\.0\\\\.0\\\\|\\\\$\\(Version\\)\\\\|ClientResources\" ScottReed.Optimizely.Forms.DynamicEmailRouting/ProtectedModule/ ScottReed.Optimizely.Forms.DynamicEmailRouting/build/ ScottReed.Optimizely.Forms.DynamicEmailRouting/*.csproj)"
     ]
   }
 }

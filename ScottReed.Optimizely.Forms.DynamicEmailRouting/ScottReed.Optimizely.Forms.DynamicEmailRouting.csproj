@@ -74,6 +74,14 @@
     <!-- Copy module.config to ZIP root (not versioned) -->
     <Copy SourceFiles="ProtectedModule\module.config" DestinationFolder="$(_ModuleZipStaging)" />
 
+    <!-- Rewrite clientResourceRelativePath to match the current package Version so the
+         versioned client-resource folder inside the ZIP ($(Version)/ClientResources/...) is
+         actually what Optimizely serves. Without this, module.config's hard-coded version
+         would 404 every .js/.css after a version bump. -->
+    <XmlPoke XmlInputPath="$(_ModuleZipStaging)\module.config"
+             Query="/module/@clientResourceRelativePath"
+             Value="$(Version)" />
+
     <!-- Create the ZIP -->
     <ZipDirectory SourceDirectory="$(_ModuleZipStaging)" DestinationFile="$(_ModuleZipOutput)" Overwrite="true" />
   </Target>
