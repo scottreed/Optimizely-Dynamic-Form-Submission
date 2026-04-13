@@ -95,12 +95,15 @@
        so the consumer's bin/{cfg}/{tfm}/modules/_protected/ gets a copy too (same pattern
        EPiServer.CMS.UI uses). The file itself is produced by CreateModuleZip before pack runs. -->
   <ItemGroup>
+    <!-- No CopyToOutputDirectory: the ZIP only needs to ship inside the nupkg, not be copied
+         into THIS project's bin during build. CreateModuleZip runs before GenerateNuspec, so the
+         file exists by pack time. Setting CopyToOutputDirectory here would make `dotnet build`
+         (which runs before pack in CI) try to copy a file that doesn't exist yet → MSB3030. -->
     <Content Include="$(_ModuleZipOutput)" Condition="'$(IsPackable)' != 'false'">
       <Pack>true</Pack>
       <PackagePath>contentFiles\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip;content\any\any\modules\_protected\$(_ModuleName)\$(_ModuleName).zip</PackagePath>
       <BuildAction>None</BuildAction>
       <PackageCopyToOutput>true</PackageCopyToOutput>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
     </Content>
   </ItemGroup>
