@@ -365,7 +365,7 @@ After a workflow run completes:
 
 1. Go to the **Actions** tab in your GitHub repo
 2. Click the completed workflow run
-3. Download the **nuget-package** artifact (contains `.nupkg` and `.snupkg`)
+3. Download the **nuget-package-{version}** artifact (e.g. `nuget-package-1.3.0`) &mdash; contains `.nupkg` and `.snupkg`
 4. Publish manually:
 
 ```bash
