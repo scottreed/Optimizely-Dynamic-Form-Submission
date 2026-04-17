@@ -22,7 +22,7 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Models
 
         [Display(Name = "Enable Conditional Logic", Order = 1,
             Description = "When enabled, the conditions below gate whether this email is sent. When disabled, conditions are ignored and the email is always sent (subject to email routing).")]
-        public virtual bool ConditionsEnabled { get; set; } = true;
+        public virtual bool? ConditionsEnabled { get; set; } = true;
 
         [Display(Name = "Conditional Match", Order = 2,
             Description = "Whether ALL or ANY conditions must match.")]

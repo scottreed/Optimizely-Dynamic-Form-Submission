@@ -62,7 +62,7 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
                 foreach (var rule in allRules)
                 {
                     // Step 1: Evaluate conditions — if disabled, skip evaluation; if they fail, skip this rule entirely
-                    if (!rule.ConditionsEnabled)
+                    if (rule.ConditionsEnabled == false)
                     {
                         _log.LogDebug("DynamicEmailRoutingActor: Conditional logic disabled — skipping condition evaluation.");
                     }
