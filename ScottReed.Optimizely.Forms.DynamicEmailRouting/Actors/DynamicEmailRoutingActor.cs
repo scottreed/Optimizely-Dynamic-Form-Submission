@@ -225,7 +225,8 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
                 if (kvp.Key.StartsWith("SYSTEMCOLUMN", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                var friendlyName = kvp.Key;
+                var fieldName = kvp.Key;
+                var label = string.Empty;
                 if (friendlyNameInfos != null)
                 {
                     var nameInfo = friendlyNameInfos.FirstOrDefault(n =>
@@ -233,13 +234,18 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
 
                     if (nameInfo != null)
                     {
-                        friendlyName = !string.IsNullOrEmpty(nameInfo.Label)
-                            ? nameInfo.Label
-                            : nameInfo.FriendlyName ?? kvp.Key;
+                        fieldName = nameInfo.FriendlyName ?? kvp.Key;
+                        label = nameInfo.Label ?? string.Empty;
                     }
                 }
 
-                result[friendlyName] = kvp.Value?.ToString() ?? string.Empty;
+                var submittedValue = kvp.Value?.ToString() ?? string.Empty;
+                result[fieldName] = submittedValue;
+
+                if (!string.IsNullOrWhiteSpace(label) && !string.Equals(label, fieldName, StringComparison.OrdinalIgnoreCase))
+                {
+                    result[label] = submittedValue;
+                }
             }
 
             return result;
