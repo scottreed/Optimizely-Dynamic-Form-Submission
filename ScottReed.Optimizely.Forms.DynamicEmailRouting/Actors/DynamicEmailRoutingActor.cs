@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Text;
 using System.Text.Json;
 using ScottReed.Optimizely.Forms.DynamicEmailRouting.Models;
 using ScottReed.Optimizely.Forms.DynamicEmailRouting.Properties;
@@ -160,8 +162,9 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
 
         /// <summary>
         /// Resolves a field value from friendly data, trying exact match first,
-        /// then falling back to a whitespace-insensitive match.
-        /// The placeholder store may return "Text 2" while the submission data has "Text2".
+        /// then falling back to a normalized match that handles HTML-encoded characters
+        /// (e.g. V&amp;auml;lj region → Välj region), Unicode normalization, and
+        /// whitespace differences (e.g. "Text 2" vs "Text2").
         /// </summary>
         private string ResolveFieldValue(string fieldName, Dictionary<string, string> friendlyData)
         {
@@ -169,18 +172,40 @@ namespace ScottReed.Optimizely.Forms.DynamicEmailRouting.Actors
             if (friendlyData.TryGetValue(fieldName, out var value))
                 return value?.Trim() ?? string.Empty;
 
-            // Fallback: compare with whitespace removed
-            var normalised = fieldName.Replace(" ", "");
+            var normalised = NormalizeFieldKey(fieldName);
+
             foreach (var kvp in friendlyData)
             {
-                if (string.Equals(kvp.Key.Replace(" ", ""), normalised, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(NormalizeFieldKey(kvp.Key), normalised, StringComparison.OrdinalIgnoreCase))
                     return kvp.Value?.Trim() ?? string.Empty;
             }
 
-            _log.LogDebug("DynamicEmailRoutingActor: Field '{Field}' not found in submission data. Available keys: {Keys}",
+            _log.LogInformation("DynamicEmailRoutingActor: Field '{Field}' not found in submission data. Available keys: {Keys}",
                 fieldName, string.Join(", ", friendlyData.Keys));
 
             return string.Empty;
+        }
+
+        /// <summary>
+        /// Normalizes a field key for comparison by decoding HTML entities,
+        /// applying Unicode normalization (FormC), and removing all whitespace.
+        /// This handles cases where the placeholder store returns HTML-encoded
+        /// field names (e.g. "V&amp;auml;lj region" instead of "Välj region").
+        /// </summary>
+        private static string NormalizeFieldKey(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return string.Empty;
+
+            // Decode HTML entities, for example:
+            // V&auml;lj ett l&auml;n -> Välj ett län
+            var decoded = WebUtility.HtmlDecode(value);
+
+            // Normalize unicode representation
+            decoded = decoded.Normalize(NormalizationForm.FormC);
+
+            // Remove all whitespace, not only regular spaces
+            return new string(decoded.Where(c => !char.IsWhiteSpace(c)).ToArray());
         }
 
         /// <summary>

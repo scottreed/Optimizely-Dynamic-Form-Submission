@@ -93,7 +93,7 @@ The `.csproj` dynamically builds the protected module ZIP at pack time:
 
 ## Known Issues & Gotchas
 
-- **Field name mismatch**: The placeholder store returns display names (e.g. "Text 2") while submission data uses friendly names without spaces ("Text2"). The `ResolveFieldValue` helper handles this with a whitespace-stripped fallback.
+- **Field name mismatch**: The placeholder store may return HTML-encoded display names (e.g. "V&auml;lj region" instead of "Välj region") or names with extra spaces ("Text 2" vs "Text2"). The `ResolveFieldValue` helper tries an exact match first, then falls back to `NormalizeFieldKey` which decodes HTML entities, applies Unicode normalization (FormC), and strips all whitespace.
 - **Field names from conditions/routing JSON may contain `::` prefix/suffix**: These are stripped with `.Trim(':')`.
 - **The built-in `SendEmailAfterSubmissionActor` runs independently**: If both actors are configured on the same form, emails will be sent twice. Only use one or the other.
 - **Empty conditions = always send**: If no conditions are configured, the email is always sent (by design).
