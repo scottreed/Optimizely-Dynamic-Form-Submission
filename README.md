@@ -5,7 +5,7 @@ A custom Optimizely Forms post-submission actor for CMS 12 that provides:
 - **Email Routing** &mdash; dynamically routes the "To" email address based on a submitted form field value, using the same rich operator set as conditions (is, is not, contains, starts with, ends with, greater than, less than). The base "To" field acts as a fallback if no route matches.
 - **Conditional Logic** &mdash; gates whether the email is sent at all, with AND/OR matching across multiple conditions. Operators: **is**, **is not**, **contains**, **starts with**, **ends with**, **greater than**, **less than**.
 - **Smart value inputs** &mdash; when a routing or condition row targets a selection-type form element (dropdown, radio, checkbox), the value input automatically switches from a free-text box to a dropdown of the element's predefined options.
-- **Full Email Template Support** &mdash; inherits the Insert Placeholder dropdown, rich text body editor, From/Reply-To/Subject fields from the built-in email actor.
+- **Full Email Template Support** &mdash; inherits the Insert Placeholder dropdown, rich text body editor, From/Reply-To/Subject fields from the built-in email actor. 
 
 ---
 
